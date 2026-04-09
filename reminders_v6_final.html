@@ -1,0 +1,1195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Reminders Campaign Dashboard</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* ─── TOKENS ─────────────────────────────────── */
+:root{
+  --bg0:#060B13;--bg1:#0B1320;--bg2:#101A2D;--bg3:#162035;--bg4:#1C2840;
+  --b1:rgba(79,142,247,.1);--b2:rgba(79,142,247,.2);--b3:rgba(79,142,247,.3);
+  --ac:#4F8EF7;--ac2:#6EA8FF;--ag:rgba(79,142,247,.1);
+  --dp:#4F8EF7;--dpg:rgba(79,142,247,.14);
+  --ov:#2DD882;--ovg:rgba(45,216,130,.14);
+  --ap:#F5A623;--apg:rgba(245,166,35,.14);
+  --pu:#A78BFA;--pug:rgba(167,139,250,.14);
+  --re:#FF5C5C;--reg:rgba(255,92,92,.12);
+  --cy:#22D3EE;
+  --mu:#3A4A60;--mu2:#5A6A80;--mu3:#7A8A9A;
+  --tx:#E8EDF5;--tx2:#B8C5D8;
+  --fn:'Plus Jakarta Sans',sans-serif;--mo:'JetBrains Mono',monospace;
+  --r:8px;--r2:12px;--r3:16px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;font-family:var(--fn);background:var(--bg0);color:var(--tx);-webkit-font-smoothing:antialiased;overflow:hidden}
+::-webkit-scrollbar{width:4px;height:4px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--bg4);border-radius:4px}
+
+/* ─── LOGIN ──────────────────────────────────── */
+#login{position:fixed;inset:0;background:var(--bg0);display:flex;align-items:center;justify-content:center;z-index:9999}
+#login::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse 60% 50% at 50% 0%,rgba(79,142,247,.08) 0%,transparent 70%);pointer-events:none}
+.lw{width:400px;position:relative;z-index:1;animation:riseIn .5s cubic-bezier(.16,1,.3,1)}
+@keyframes riseIn{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:translateY(0)}}
+.l-eyebrow{display:flex;align-items:center;gap:8px;margin-bottom:12px}
+.l-eyebrow-line{width:28px;height:1px;background:linear-gradient(90deg,var(--ac),transparent)}
+.l-eyebrow-txt{font-family:var(--mo);font-size:10px;letter-spacing:3px;color:var(--ac);text-transform:uppercase}
+.l-h{font-size:30px;font-weight:700;letter-spacing:-.8px;margin-bottom:4px}
+.l-sub{font-size:13px;color:var(--mu3);margin-bottom:28px;line-height:1.5}
+.l-card{background:linear-gradient(145deg,var(--bg2),var(--bg3));border:1px solid var(--b2);border-radius:var(--r3);padding:28px 30px;box-shadow:0 40px 80px rgba(0,0,0,.6),inset 0 1px 0 rgba(255,255,255,.04)}
+.l-label{font-family:var(--mo);font-size:10px;letter-spacing:1px;color:var(--mu3);text-transform:uppercase;display:block;margin-bottom:6px}
+.l-inp{width:100%;background:var(--bg4);border:1px solid var(--b1);border-radius:var(--r);padding:11px 14px;color:var(--tx);font-family:var(--fn);font-size:14px;outline:none;transition:.2s;margin-bottom:14px}
+.l-inp:focus{border-color:var(--ac);box-shadow:0 0 0 3px var(--ag)}
+.l-btn{width:100%;padding:12px;background:var(--ac);border:none;border-radius:var(--r);color:#fff;font-family:var(--fn);font-size:14px;font-weight:600;cursor:pointer;transition:.2s;margin-top:4px;letter-spacing:.2px}
+.l-btn:hover{background:var(--ac2);transform:translateY(-1px);box-shadow:0 8px 24px rgba(79,142,247,.3)}
+.l-btn:active{transform:translateY(0)}
+.l-err{color:var(--re);font-size:11px;margin-top:10px;text-align:center;min-height:16px;font-family:var(--mo)}
+.l-hint{font-size:11px;color:var(--mu);margin-top:18px;text-align:center;padding-top:14px;border-top:1px solid var(--b1)}
+.l-hint b{color:var(--mu2);font-family:var(--mo);font-weight:400}
+
+/* ─── APP SHELL ──────────────────────────────── */
+#app{display:none;height:100vh;flex-direction:column}
+#app.on{display:flex}
+
+/* ─── TOPBAR ─────────────────────────────────── */
+.topbar{height:52px;background:var(--bg1);border-bottom:1px solid var(--b1);display:flex;align-items:center;padding:0 20px;gap:14px;flex-shrink:0;position:relative;z-index:50}
+.topbar::after{content:'';position:absolute;bottom:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--ac),transparent);opacity:.2}
+.t-logo{font-family:var(--mo);font-size:11px;color:var(--ac);letter-spacing:2px;font-weight:600}
+.t-sep{width:1px;height:16px;background:var(--b2)}
+.t-title{font-size:13px;font-weight:500;color:var(--tx2)}
+.t-right{margin-left:auto;display:flex;align-items:center;gap:8px}
+.t-badge{font-size:10px;font-family:var(--mo);padding:3px 10px;border-radius:20px;border:1px solid;letter-spacing:.5px;line-height:1.4}
+.tb-admin{color:#C084FC;border-color:rgba(192,132,252,.3);background:rgba(192,132,252,.07)}
+.tb-manager{color:var(--ac2);border-color:var(--b2);background:var(--ag)}
+.tb-viewer{color:var(--ov);border-color:rgba(45,216,130,.3);background:rgba(45,216,130,.07)}
+.t-user{font-size:11px;color:var(--mu3);font-family:var(--mo)}
+.t-btn{height:28px;padding:0 10px;border:1px solid var(--b1);border-radius:var(--r);background:transparent;color:var(--mu3);cursor:pointer;font-family:var(--fn);font-size:11px;transition:.18s;display:flex;align-items:center;gap:5px}
+.t-btn:hover{border-color:var(--b2);color:var(--tx)}
+
+/* ─── NAV ────────────────────────────────────── */
+.nav{background:var(--bg1);border-bottom:1px solid var(--b1);padding:0 20px;display:flex;flex-shrink:0}
+.nav-tab{font-size:12px;padding:0 16px;height:40px;cursor:pointer;color:var(--mu2);font-weight:500;border-bottom:2px solid transparent;transition:.18s;display:flex;align-items:center;gap:7px;white-space:nowrap;font-family:var(--fn)}
+.nav-tab:hover{color:var(--tx)}
+.nav-tab.on{color:var(--ac);border-bottom-color:var(--ac)}
+.nav-tab .nt-icon{font-size:12px;opacity:.7}
+
+/* ─── MAIN ───────────────────────────────────── */
+.main{flex:1;overflow-y:auto;padding:18px 20px}
+.pg{display:none}.pg.on{display:block}
+
+/* ─── SECTION LABEL ──────────────────────────── */
+.sec{font-size:10px;font-family:var(--mo);color:var(--mu2);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:10px;display:flex;align-items:center;gap:8px}
+.sec::after{content:'';flex:1;height:1px;background:var(--b1)}
+
+/* ─── CTRL BAR ───────────────────────────────── */
+.ctrl{display:flex;align-items:center;gap:8px;margin-bottom:16px;flex-wrap:wrap}
+.seg{display:flex;background:var(--bg2);border:1px solid var(--b1);border-radius:var(--r);padding:3px;gap:2px}
+.fb{font-size:11px;padding:5px 14px;border-radius:6px;cursor:pointer;background:transparent;color:var(--mu3);font-family:var(--fn);border:none;transition:.18s;font-weight:500}
+.fb:hover{color:var(--tx);background:var(--bg4)}
+.fb.fa{background:var(--ac);color:#fff;box-shadow:0 2px 8px rgba(79,142,247,.3)}
+.fb.fo{background:var(--ov);color:#fff;box-shadow:0 2px 8px rgba(45,216,130,.3)}
+.fb.ff{background:var(--ap);color:#fff;box-shadow:0 2px 8px rgba(245,166,35,.3)}
+.csep{width:1px;height:20px;background:var(--b1);margin:0 2px}
+.act-btn{font-size:11px;padding:6px 13px;border:1px solid var(--b2);border-radius:var(--r);cursor:pointer;background:transparent;color:var(--mu3);font-family:var(--fn);transition:.18s;display:flex;align-items:center;gap:5px;font-weight:500}
+.act-btn:hover{border-color:var(--ac);color:var(--ac);background:var(--ag)}
+.act-btn.g:hover{border-color:var(--ov);color:var(--ov);background:var(--ovg)}
+.act-btn.r:hover{border-color:var(--re);color:var(--re);background:var(--reg)}
+.sync{display:flex;align-items:center;gap:6px;font-size:10px;color:var(--mu3);font-family:var(--mo);margin-left:auto}
+.sdot{width:6px;height:6px;border-radius:50%;background:var(--mu);transition:.3s}
+.sdot.on{background:var(--ov);box-shadow:0 0 6px var(--ov)}
+.sdot.spin{animation:blink 1.2s infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.2}}
+
+/* ─── KPI CARDS ──────────────────────────────── */
+.kgrid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px;margin-bottom:14px}
+.kgrid-4{grid-template-columns:repeat(4,minmax(0,1fr))}
+.kpi{background:var(--bg2);border:1px solid var(--b1);border-radius:var(--r2);padding:14px 16px;position:relative;overflow:hidden;transition:.2s}
+.kpi:hover{border-color:var(--b2);transform:translateY(-1px)}
+.kpi::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;border-radius:var(--r2) var(--r2) 0 0}
+.kpi-total::before{background:linear-gradient(90deg,var(--ac),var(--ac2))}
+.kpi-dp::before{background:linear-gradient(90deg,#2563EB,var(--dp))}
+.kpi-ov::before{background:linear-gradient(90deg,#16A34A,var(--ov))}
+.kpi-ap::before{background:linear-gradient(90deg,#D97706,var(--ap))}
+.kpi-pk::before{background:linear-gradient(90deg,#7C3AED,var(--pu))}
+.kpi-cy::before{background:linear-gradient(90deg,#0891B2,var(--cy))}
+.keb{font-size:10px;font-family:var(--mo);color:var(--mu2);letter-spacing:.8px;text-transform:uppercase;margin-bottom:8px}
+.kval{font-size:22px;font-weight:700;font-family:var(--mo);letter-spacing:-1px;line-height:1}
+.kmeta{font-size:11px;color:var(--mu3);margin-top:5px;display:flex;align-items:center;gap:5px;flex-wrap:wrap}
+.delta{font-family:var(--mo);font-size:10px;padding:2px 6px;border-radius:4px;font-weight:600}
+.up{color:#2DD882;background:rgba(45,216,130,.1)}
+.dn{color:#FF5C5C;background:rgba(255,92,92,.1)}
+.nc{color:var(--mu3);background:var(--bg3)}
+
+/* ─── INSIGHT CARDS ──────────────────────────── */
+.insight-row{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px}
+.insight{background:var(--bg2);border:1px solid var(--b1);border-radius:var(--r2);padding:14px 16px;display:flex;gap:12px;align-items:flex-start;transition:.2s}
+.insight:hover{border-color:var(--b2)}
+.ins-icon{width:34px;height:34px;border-radius:var(--r);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
+.ins-txt .ins-title{font-size:12px;font-weight:600;margin-bottom:3px}
+.ins-txt .ins-body{font-size:11px;color:var(--mu3);line-height:1.5}
+
+/* ─── DATA COUNT PANEL ───────────────────────── */
+.dc-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px}
+.dc-card{background:var(--bg2);border:1px solid var(--b1);border-radius:var(--r2);padding:14px 16px;transition:.2s}
+.dc-card:hover{border-color:var(--b2)}
+.dc-top{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:10px}
+.dc-name{font-size:11px;font-family:var(--mo);font-weight:600;letter-spacing:.5px}
+.dc-off{font-size:10px;color:var(--mu);margin-top:2px}
+.dc-badge{font-size:10px;font-family:var(--mo);padding:3px 8px;border-radius:5px;font-weight:600}
+.dc-nums{display:flex;align-items:baseline;gap:8px;margin-bottom:8px}
+.dc-val{font-size:26px;font-weight:700;font-family:var(--mo);letter-spacing:-1px}
+.dc-prev{font-size:11px;color:var(--mu2);font-family:var(--mo)}
+.dc-track{flex:1;height:3px;background:rgba(255,255,255,.06);border-radius:2px;overflow:hidden}
+.dc-fill{height:100%;border-radius:2px;transition:width .9s cubic-bezier(.4,0,.2,1)}
+.dc-bar-row{display:flex;align-items:center;gap:8px}
+.dc-pct{font-size:10px;font-family:var(--mo);min-width:30px;text-align:right}
+.dc-detail{margin-top:8px;font-size:10px;color:var(--mu2);font-family:var(--mo);line-height:1.6}
+
+/* ─── CHARTS ─────────────────────────────────── */
+.g23{display:grid;grid-template-columns:minmax(0,3fr) minmax(0,2fr);gap:10px;margin-bottom:10px}
+.g3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-bottom:10px}
+.g2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-bottom:10px}
+.card{background:var(--bg2);border:1px solid var(--b1);border-radius:var(--r2);padding:14px;transition:.2s}
+.card:hover{border-color:var(--b2)}
+.ch{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.clbl{font-size:10px;font-family:var(--mo);color:var(--mu2);letter-spacing:.8px;text-transform:uppercase}
+.leg{display:flex;flex-wrap:wrap;gap:8px}
+.ld{width:7px;height:7px;border-radius:2px;display:inline-block;vertical-align:middle;margin-right:3px}
+.leg span{font-size:10px;color:var(--mu3);font-family:var(--mo)}
+
+/* ─── TABLES ─────────────────────────────────── */
+.tbl{width:100%;border-collapse:collapse}
+.tbl th{font-size:10px;font-family:var(--mo);color:var(--mu2);text-transform:uppercase;letter-spacing:.8px;padding:7px 10px;text-align:left;border-bottom:1px solid var(--b1);font-weight:500}
+.tbl td{padding:7px 10px;font-size:12px;color:var(--tx2);border-bottom:1px solid rgba(79,142,247,.04)}
+.tbl tr:hover td{background:rgba(79,142,247,.04);color:var(--tx)}
+.num{text-align:right;font-family:var(--mo)}
+.t-grand td{background:rgba(79,142,247,.14)!important;color:var(--ac2);font-weight:700;font-family:var(--mo);font-size:12px;border-top:1px solid var(--b2);border-bottom:none}
+.t-sub td{background:rgba(255,255,255,.03);color:var(--mu3);font-size:11px}
+.t-dp td{background:rgba(79,142,247,.06)!important;color:#90BAF9;font-weight:600;font-family:var(--mo);font-size:11px}
+.t-ov td{background:rgba(45,216,130,.06)!important;color:#7BDCA5;font-weight:600;font-family:var(--mo);font-size:11px}
+.t-ap td{background:rgba(245,166,35,.06)!important;color:#F7C56A;font-weight:600;font-family:var(--mo);font-size:11px}
+.pill{font-size:10px;font-family:var(--mo);padding:2px 8px;border-radius:4px}
+.p-dp{color:var(--dp);background:var(--dpg);border:1px solid rgba(79,142,247,.2)}
+.p-ov{color:var(--ov);background:var(--ovg);border:1px solid rgba(45,216,130,.2)}
+.p-ap{color:var(--ap);background:var(--apg);border:1px solid rgba(245,166,35,.2)}
+.p-cb{color:var(--mu3);background:rgba(255,255,255,.04);border:1px solid var(--b1)}
+.del-btn{font-size:10px;color:var(--mu);background:transparent;border:none;cursor:pointer;padding:2px 6px;border-radius:4px;transition:.15s;font-family:var(--mo)}
+.del-btn:hover{color:var(--re);background:var(--reg)}
+
+/* ─── PERF / MONTHLY SEL ─────────────────────── */
+.wk-sel{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px}
+.wkbtn{font-size:11px;padding:5px 13px;border:1px solid var(--b1);border-radius:var(--r);cursor:pointer;background:transparent;color:var(--mu3);font-family:var(--mo);transition:.18s}
+.wkbtn:hover{border-color:var(--b2);color:var(--tx)}
+.wkbtn.on{background:var(--bg3);border-color:var(--b2);color:var(--tx);font-weight:500}
+
+/* ─── DC TABLE ───────────────────────────────── */
+.dct{width:100%;border-collapse:collapse;font-size:11px}
+.dct th{font-size:10px;font-family:var(--mo);color:var(--mu2);padding:6px 8px;text-align:right;border-bottom:1px solid var(--b1);font-weight:500;white-space:nowrap}
+.dct th:first-child{text-align:left}
+.dct td{padding:5px 8px;border-bottom:1px solid rgba(79,142,247,.04);text-align:right;font-family:var(--mo);color:var(--tx2)}
+.dct td:first-child{text-align:left;color:var(--mu3)}
+.dct tr:hover td{background:rgba(79,142,247,.04)}
+.dct .ds td{background:rgba(79,142,247,.08);color:var(--ac2);font-weight:600}
+.dct .dg td{background:rgba(79,142,247,.16);color:var(--ac2);font-weight:700;border-top:1px solid var(--b2)}
+.dct .em{color:var(--mu)!important}
+
+/* ─── DANGER ZONE ────────────────────────────── */
+.dz{background:rgba(255,92,92,.04);border:1px solid rgba(255,92,92,.15);border-radius:var(--r2);padding:14px 16px;margin-bottom:14px}
+.dz-title{font-size:10px;font-family:var(--mo);color:var(--re);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:10px;display:flex;align-items:center;gap:6px}
+.dz-row{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.dz-btn{padding:8px 10px;background:transparent;border:1px solid rgba(255,92,92,.2);border-radius:var(--r);color:var(--re);font-family:var(--fn);font-size:11px;cursor:pointer;transition:.18s;font-weight:500}
+.dz-btn:hover{background:var(--reg);border-color:var(--re)}
+
+/* ─── MODALS ─────────────────────────────────── */
+.ov{position:fixed;inset:0;background:rgba(0,0,0,.8);backdrop-filter:blur(6px);z-index:200;display:none;align-items:center;justify-content:center}
+.ov.on{display:flex}
+.modal{background:linear-gradient(145deg,var(--bg2),var(--bg3));border:1px solid var(--b2);border-radius:var(--r3);padding:26px 28px;width:580px;max-height:90vh;overflow-y:auto;box-shadow:0 48px 100px rgba(0,0,0,.7),inset 0 1px 0 rgba(255,255,255,.04);animation:pop .22s cubic-bezier(.16,1,.3,1)}
+.modal.sm{width:400px}
+@keyframes pop{from{opacity:0;transform:scale(.94)}to{opacity:1;transform:scale(1)}}
+.m-ttl{font-size:16px;font-weight:700;margin-bottom:3px;letter-spacing:-.3px}
+.m-sub{font-size:12px;color:var(--mu3);margin-bottom:18px;line-height:1.6}
+.m-sec{font-size:10px;font-family:var(--mo);color:var(--ac);letter-spacing:1.5px;text-transform:uppercase;margin:16px 0 9px;padding-bottom:5px;border-bottom:1px solid rgba(79,142,247,.15)}
+.m-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+.mf label{font-size:10px;font-family:var(--mo);color:var(--mu3);display:block;margin-bottom:5px;letter-spacing:.5px;text-transform:uppercase}
+.mf input,.mf select{width:100%;background:var(--bg4);border:1px solid var(--b1);border-radius:var(--r);padding:9px 11px;color:var(--tx);font-family:var(--mo);font-size:12px;outline:none;transition:.18s}
+.mf input:focus,.mf select:focus{border-color:var(--ac);box-shadow:0 0 0 3px var(--ag)}
+.mf.full{grid-column:1/-1}
+.m-hint{font-size:10px;color:var(--mu2);margin-bottom:12px;font-family:var(--mo);background:rgba(79,142,247,.06);border-radius:6px;padding:8px 10px;line-height:1.6;border:1px solid var(--b1)}
+.m-btns{display:flex;gap:8px;margin-top:18px;padding-top:16px;border-top:1px solid var(--b1)}
+.mbtn{padding:9px 20px;border-radius:var(--r);font-family:var(--fn);font-size:13px;cursor:pointer;font-weight:600;transition:.18s;border:none;letter-spacing:.1px}
+.mbtn.p{background:var(--ac);color:#fff}.mbtn.p:hover{background:var(--ac2);box-shadow:0 4px 16px rgba(79,142,247,.3)}
+.mbtn.s{background:var(--ov);color:#fff}.mbtn.s:hover{box-shadow:0 4px 16px rgba(45,216,130,.3)}
+.mbtn.d{background:var(--re);color:#fff}.mbtn.d:hover{box-shadow:0 4px 16px rgba(255,92,92,.3)}
+.mbtn.g{background:transparent;border:1px solid var(--b2);color:var(--mu3)}.mbtn.g:hover{color:var(--tx)}
+.mstat{font-size:11px;font-family:var(--mo);margin-top:8px;min-height:16px}
+.msteps{background:rgba(0,0,0,.2);border-radius:var(--r);padding:12px 14px;font-size:12px;color:var(--mu3);line-height:2;margin-bottom:14px;border:1px solid var(--b1)}
+.msteps b{color:var(--ac);font-family:var(--mo)}
+.conf-box{text-align:center;padding:6px 0}
+.conf-icon{font-size:36px;margin-bottom:10px}
+.conf-t{font-size:16px;font-weight:700;margin-bottom:6px}
+.conf-m{font-size:12px;color:var(--mu3);line-height:1.6;margin-bottom:18px}
+
+/* ─── MISC ───────────────────────────────────── */
+.divider{height:1px;background:var(--b1);margin:14px 0}
+@media(max-width:960px){.kgrid,.kgrid-4{grid-template-columns:repeat(2,1fr)}.g23,.g3,.g2{grid-template-columns:1fr}.dc-grid{grid-template-columns:1fr}.insight-row{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+
+<!-- ════════ LOGIN ════════ -->
+<div id="login">
+  <div class="lw">
+    <div class="l-eyebrow"><div class="l-eyebrow-line"></div><span class="l-eyebrow-txt">Reminders · Direct PAC | OVS | AA</span></div>
+    <div class="l-h">Reminders Campaign</div>
+    <div class="l-sub">Sales and Performance Dashboard</div>
+    <div class="l-card">
+      <label class="l-label">Username</label>
+      <input class="l-inp" id="lu" type="text" placeholder="Enter username" autocomplete="off" onkeydown="if(event.key==='Enter')doLogin()">
+      <label class="l-label">Password</label>
+      <input class="l-inp" id="lp" type="password" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()">
+      <button class="l-btn" onclick="doLogin()">Sign In →</button>
+      <div class="l-err" id="lerr"></div>
+    </div>
+    <div class="l-hint">Accounts: <b>manager</b> · <b>admin</b> · <b>viewer</b></div>
+  </div>
+</div>
+
+<!-- ════════ MODALS ════════ -->
+<!-- Sheets Connect -->
+<div class="ov" id="ov-sheet">
+  <div class="modal">
+    <div class="m-ttl">Connect Google Sheets</div>
+    <div class="m-sub">Paste your published CSV URL — dashboard auto-syncs every 5 min.</div>
+    <div class="msteps"><b>1.</b> File → Share → Publish to web<br><b>2.</b> Select sheet tab → CSV format → Publish<br><b>3.</b> Copy URL below<br><b>Columns:</b> Week | DP Amt | OVS Amt | AAP Amt | DP Cnt | OVS Cnt | AAP Cnt | DP DC | OVS DC | AAP DC</div>
+    <div class="mf full"><label>Google Sheets CSV URL</label><input id="surl-inp" type="text" placeholder="https://docs.google.com/spreadsheets/d/.../pub?output=csv"></div>
+    <div class="mstat" id="sstat"></div>
+    <div class="m-btns"><button class="mbtn p" onclick="connectSheet()">Connect & Sync</button><button class="mbtn g" onclick="closeOv('ov-sheet')">Cancel</button></div>
+  </div>
+</div>
+
+<!-- Add Week -->
+<div class="ov" id="ov-entry">
+  <div class="modal" style="width:620px;max-height:92vh">
+    <div class="m-ttl">Add / Edit Weekly Data</div>
+    <div class="m-sub">Fill in all three sections below — CC Amount, CC Count, and Data Count — then click Save Week.</div>
+
+    <!-- Section 1: Week Label -->
+    <div class="m-sec" style="margin-top:4px">① Week Label</div>
+    <div class="mf full"><label>Week (e.g. APR 14-20 2026)</label><input id="ew-lbl" type="text" placeholder="APR 14-20 2026"></div>
+
+    <!-- Section 2: CC Amount -->
+    <div class="m-sec">② CC Amount ($) — Credit Card Sales</div>
+    <div class="m-grid">
+      <div class="mf"><label style="color:var(--dp)">DP Amount</label><input id="ea-dp" type="number" placeholder="0" min="0"></div>
+      <div class="mf"><label style="color:var(--ov)">OVS Amount</label><input id="ea-ov" type="number" placeholder="0" min="0"></div>
+      <div class="mf"><label style="color:var(--ap)">AAP Amount</label><input id="ea-ap" type="number" placeholder="0" min="0"></div>
+    </div>
+
+    <!-- Section 3: CC Count -->
+    <div class="m-sec">③ CC Count — Transaction Count</div>
+    <div class="m-grid">
+      <div class="mf"><label style="color:var(--dp)">DP Count</label><input id="ec-dp" type="number" placeholder="0" min="0"></div>
+      <div class="mf"><label style="color:var(--ov)">OVS Count</label><input id="ec-ov" type="number" placeholder="0" min="0"></div>
+      <div class="mf"><label style="color:var(--ap)">AAP Count</label><input id="ec-ap" type="number" placeholder="0" min="0"></div>
+    </div>
+
+    <!-- Section 4: Data Count -->
+    <div class="m-sec" style="color:var(--cy);border-bottom-color:rgba(34,211,238,.2)">④ Data Count — Office Totals</div>
+    <div class="m-hint" style="border-color:rgba(34,211,238,.2);background:rgba(34,211,238,.04)">
+      Total records processed per campaign group this week (sum of all np offices).<br>
+      <b style="color:var(--dp)">DP</b> = 51_np1 + 52_np1 offices &nbsp;·&nbsp;
+      <b style="color:var(--ov)">OVS</b> = 30_np1 offices &nbsp;·&nbsp;
+      <b style="color:var(--ap)">AAP</b> = 12_np1 offices
+    </div>
+    <div class="m-grid">
+      <div class="mf">
+        <label style="color:var(--dp)">DP Data Count</label>
+        <input id="ed-dp" type="number" placeholder="0" min="0" style="border-color:rgba(79,142,247,.25)">
+      </div>
+      <div class="mf">
+        <label style="color:var(--ov)">OVS Data Count</label>
+        <input id="ed-ov" type="number" placeholder="0" min="0" style="border-color:rgba(45,216,130,.25)">
+      </div>
+      <div class="mf">
+        <label style="color:var(--ap)">AAP Data Count</label>
+        <input id="ed-ap" type="number" placeholder="0" min="0" style="border-color:rgba(245,166,35,.25)">
+      </div>
+    </div>
+
+    <div class="m-btns">
+      <button class="mbtn s" onclick="saveEntry()">✓ Save Week</button>
+      <button class="mbtn g" onclick="closeOv('ov-entry')">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- DC Manual Entry -->
+<div class="ov" id="ov-dc">
+  <div class="modal">
+    <div class="m-ttl">Update Office Data Count</div>
+    <div class="m-sub">Enter new data count values for each office. Values will be added to existing totals for the selected week.</div>
+    <div class="m-sec">Target Week</div>
+    <div class="mf full"><label>Week</label><select id="dc-wk"></select></div>
+    <div class="m-sec">Office 51 & 52 (DP)</div>
+    <div class="m-grid">
+      <div class="mf"><label>51_np1</label><input id="dc-51np1" type="number" placeholder="0 (add to existing)"></div>
+      <div class="mf"><label>52_np1</label><input id="dc-52np1" type="number" placeholder="0 (add to existing)"></div>
+      <div class="mf"><label>52_np2</label><input id="dc-52np2" type="number" placeholder="0"></div>
+    </div>
+    <div class="m-grid" style="margin-top:8px">
+      <div class="mf"><label>52_np3</label><input id="dc-52np3" type="number" placeholder="0"></div>
+      <div class="mf"><label>52_np4</label><input id="dc-52np4" type="number" placeholder="0"></div>
+      <div class="mf"><label>52_np5</label><input id="dc-52np5" type="number" placeholder="0"></div>
+    </div>
+    <div class="m-sec">Office 30 (OVS)</div>
+    <div class="m-grid">
+      <div class="mf"><label>30_np1</label><input id="dc-30np1" type="number" placeholder="0"></div>
+      <div class="mf"><label>30_np2</label><input id="dc-30np2" type="number" placeholder="0"></div>
+      <div class="mf"><label>30_np3</label><input id="dc-30np3" type="number" placeholder="0"></div>
+    </div>
+    <div class="m-sec">Office 12 (AAP)</div>
+    <div class="m-grid">
+      <div class="mf"><label>12_np1</label><input id="dc-12np1" type="number" placeholder="0"></div>
+      <div class="mf"><label>12_np2</label><input id="dc-12np2" type="number" placeholder="0"></div>
+      <div class="mf"><label>12_np3</label><input id="dc-12np3" type="number" placeholder="0"></div>
+    </div>
+    <div class="m-btns"><button class="mbtn s" onclick="saveDC()">Update Counts</button><button class="mbtn g" onclick="closeOv('ov-dc')">Cancel</button></div>
+  </div>
+</div>
+
+<!-- Confirm -->
+<div class="ov" id="ov-conf">
+  <div class="modal sm">
+    <div class="conf-box">
+      <div class="conf-icon">⚠️</div>
+      <div class="conf-t" id="conf-t">Confirm</div>
+      <div class="conf-m" id="conf-m">Are you sure?</div>
+      <div style="display:flex;gap:8px;justify-content:center">
+        <button class="mbtn d" id="conf-ok">Confirm</button>
+        <button class="mbtn g" onclick="closeOv('ov-conf')">Cancel</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════ APP ════════ -->
+<div id="app">
+
+  <!-- Topbar -->
+  <div class="topbar">
+    <span class="t-logo">REMINDERS</span>
+    <div class="t-sep"></div>
+    <span class="t-title">Reminders Campaign Dashboard</span>
+    <div class="t-right">
+      <span class="t-badge" id="t-badge"></span>
+      <span class="t-user" id="t-user"></span>
+      <button class="t-btn" onclick="doLogout()">Sign out</button>
+    </div>
+  </div>
+
+  <!-- Nav -->
+  <div class="nav" id="main-nav">
+    <div class="nav-tab on" onclick="goTab('overview',this)"><span class="nt-icon">◈</span> Overview</div>
+    <div class="nav-tab" onclick="goTab('weekly',this)"><span class="nt-icon">◷</span> Weekly Performance</div>
+    <div class="nav-tab" onclick="goTab('monthly',this)"><span class="nt-icon">◫</span> Monthly Performance</div>
+    <div class="nav-tab" onclick="goTab('datacount',this)"><span class="nt-icon">◎</span> Data Count</div>
+    <div class="nav-tab admin-only" onclick="goTab('mgmt',this)"><span class="nt-icon">◧</span> Management</div>
+  </div>
+
+  <!-- ── MAIN ── -->
+  <div class="main">
+
+    <!-- ══ OVERVIEW ══ -->
+    <div class="pg on" id="pg-overview">
+
+      <div class="ctrl">
+        <span style="font-size:10px;font-family:var(--mo);color:var(--mu2);letter-spacing:1px">FILTER</span>
+        <div class="seg">
+          <button class="fb fa" onclick="setF('all',this)">All</button>
+          <button class="fb" onclick="setF('dp',this,'fa')">DP</button>
+          <button class="fb" onclick="setF('ov',this,'fo')">OVS</button>
+          <button class="fb" onclick="setF('ap',this,'ff')">AAP</button>
+        </div>
+        <div class="csep"></div>
+        <div id="admin-ctrl" style="display:flex;gap:6px">
+          <button class="act-btn" onclick="openOv('ov-sheet')">⟳ Sheets</button>
+          <button class="act-btn g" onclick="clearEntryForm();openOv('ov-entry')">+ Add Week</button>
+        </div>
+        <div class="sync"><span class="sdot" id="sdot"></span><span id="slbl">Not connected</span></div>
+      </div>
+
+      <!-- KPIs -->
+      <div class="kgrid">
+        <div class="kpi kpi-total"><div class="keb">Total CC Amount</div><div class="kval" id="k-tot">—</div><div class="kmeta" id="k-tot-m">—</div></div>
+        <div class="kpi kpi-dp"><div class="keb">DP Reminders</div><div class="kval" id="k-dp" style="color:var(--dp)">—</div><div class="kmeta"><span class="delta" id="k-dpd">—</span></div></div>
+        <div class="kpi kpi-ov"><div class="keb">OVS Reminders</div><div class="kval" id="k-ov" style="color:var(--ov)">—</div><div class="kmeta"><span class="delta" id="k-ovd">—</span></div></div>
+        <div class="kpi kpi-ap"><div class="keb">AAP Reminders</div><div class="kval" id="k-ap" style="color:var(--ap)">—</div><div class="kmeta"><span class="delta" id="k-apd">—</span></div></div>
+        <div class="kpi kpi-pk"><div class="keb">Peak Week</div><div class="kval" id="k-pk" style="color:var(--pu)">—</div><div class="kmeta" id="k-pkw">—</div></div>
+      </div>
+
+      <!-- Insights -->
+      <div class="sec">Insights</div>
+      <div class="insight-row" id="insights-row"></div>
+
+      <!-- Data Count WoW -->
+      <div class="sec">Data Count — Week-over-Week</div>
+      <div class="dc-grid" id="dc-wow"></div>
+
+      <!-- Charts Row 1 -->
+      <div class="g23">
+        <div class="card"><div class="ch"><span class="clbl">Weekly CC Amount Trend</span><div class="leg" id="leg1"></div></div><div style="position:relative;height:190px"><canvas id="c1"></canvas></div></div>
+        <div class="card"><div class="ch"><span class="clbl">Type Distribution</span></div><div style="position:relative;height:150px"><canvas id="c2"></canvas></div><div class="leg" id="leg2" style="justify-content:center;margin-top:8px"></div></div>
+      </div>
+
+      <!-- Charts Row 2 -->
+      <div class="g3">
+        <div class="card"><div class="ch"><span class="clbl">CC Count by Week</span></div><div style="position:relative;height:145px"><canvas id="c3"></canvas></div></div>
+        <div class="card"><div class="ch"><span class="clbl">Latest Week Daily</span></div><div style="position:relative;height:145px"><canvas id="c4"></canvas></div></div>
+        <div class="card"><div class="ch"><span class="clbl">Cumulative Amount</span></div><div style="position:relative;height:145px"><canvas id="c5"></canvas></div></div>
+      </div>
+
+      <!-- Charts Row 3 + Summary Table -->
+      <div class="g2">
+        <div class="card">
+          <div class="ch"><span class="clbl">DP vs OVS vs AAP</span><div class="leg"><span><span class="ld" style="background:var(--dp)"></span>DP</span><span><span class="ld" style="background:var(--ov)"></span>OVS</span><span><span class="ld" style="background:var(--ap)"></span>AAP</span></div></div>
+          <div style="position:relative;height:168px"><canvas id="c6"></canvas></div>
+        </div>
+        <div class="card">
+          <div class="ch"><span class="clbl">Weekly Summary</span></div>
+          <div style="max-height:220px;overflow-y:auto">
+            <table class="tbl"><thead><tr><th>Period</th><th>Type</th><th class="num">Amount</th><th class="num">Count</th><th id="del-head"></th></tr></thead><tbody id="tbl-body"></tbody></table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ WEEKLY PERFORMANCE ══ -->
+    <div class="pg" id="pg-weekly">
+      <div class="sec">Select Week</div>
+      <div class="wk-sel" id="wk-sel-btns"></div>
+      <div id="wk-content"></div>
+    </div>
+
+    <!-- ══ MONTHLY PERFORMANCE ══ -->
+    <div class="pg" id="pg-monthly">
+      <div class="sec">Select Month</div>
+      <div class="wk-sel" id="mo-sel-btns"></div>
+      <div id="mo-content"></div>
+    </div>
+
+    <!-- ══ DATA COUNT ══ -->
+    <div class="pg" id="pg-datacount">
+      <div class="g2" style="margin-bottom:12px">
+        <div class="card"><div class="ch"><span class="clbl">DP Total (Offices 51+52) by Week</span></div><div style="position:relative;height:180px"><canvas id="dc-c1"></canvas></div></div>
+        <div class="card"><div class="ch"><span class="clbl">OVS (Office 30) vs AAP (Office 12)</span></div><div style="position:relative;height:180px"><canvas id="dc-c2"></canvas></div></div>
+      </div>
+      <div class="sec">Office 51 & 52 — DP Reminders</div>
+      <div class="card" style="margin-bottom:10px;overflow-x:auto"><table class="dct" id="dct-5152"></table></div>
+      <div class="sec">Office 30 — OVS Reminders</div>
+      <div class="card" style="margin-bottom:10px;overflow-x:auto"><table class="dct" id="dct-30"></table></div>
+      <div class="sec">Office 12 — AAP Reminders</div>
+      <div class="card" style="overflow-x:auto"><table class="dct" id="dct-12"></table></div>
+    </div>
+
+    <!-- ══ MANAGEMENT ══ -->
+    <div class="pg" id="pg-mgmt">
+      <div class="dz">
+        <div class="dz-title">⚠ Data Management</div>
+        <div class="dz-row">
+          <button class="dz-btn" onclick="conf('Delete Last Week','Remove the most recent week entry from the dataset?',deleteLastWeek)">Delete Last Week</button>
+          <button class="dz-btn" onclick="doDeleteSelect()">Delete Specific Week</button>
+          <button class="dz-btn" onclick="conf('Clear All Data','Permanently erase ALL stored data. This cannot be undone.',clearAll)">Clear All Data</button>
+        </div>
+      </div>
+      <div class="sec">All Stored Weeks</div>
+      <div class="card">
+        <div style="font-size:11px;color:var(--mu3);font-family:var(--mo);margin-bottom:10px;display:flex;gap:16px;flex-wrap:wrap">
+          <span><span style="display:inline-block;width:8px;height:8px;background:var(--dp);border-radius:2px;margin-right:4px;vertical-align:middle"></span>DP columns</span>
+          <span><span style="display:inline-block;width:8px;height:8px;background:var(--ov);border-radius:2px;margin-right:4px;vertical-align:middle"></span>OVS columns</span>
+          <span><span style="display:inline-block;width:8px;height:8px;background:var(--ap);border-radius:2px;margin-right:4px;vertical-align:middle"></span>AAP columns</span>
+          <span style="margin-left:auto;color:var(--mu2)">Click ✎ to edit a week · ✕ to delete</span>
+        </div>
+        <div style="overflow-x:auto">
+        <table class="tbl" id="mgmt-tbl" style="min-width:900px">
+          <thead><tr>
+            <th style="width:32px">#</th>
+            <th>Week</th>
+            <th class="num" style="color:#90BAF9">DP Amt</th>
+            <th class="num" style="color:#7BDCA5">OVS Amt</th>
+            <th class="num" style="color:#F7C56A">AAP Amt</th>
+            <th class="num" style="color:#90BAF9">DP Cnt</th>
+            <th class="num" style="color:#7BDCA5">OVS Cnt</th>
+            <th class="num" style="color:#F7C56A">AAP Cnt</th>
+            <th class="num" style="color:#90BAF9;border-left:1px solid var(--b1)">DP DC</th>
+            <th class="num" style="color:#7BDCA5">OVS DC</th>
+            <th class="num" style="color:#F7C56A">AAP DC</th>
+            <th style="width:70px"></th>
+          </tr></thead>
+          <tbody id="mgmt-body"></tbody>
+        </table>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /main -->
+</div><!-- /app -->
+
+<script>
+'use strict';
+// ════════════════════════════════════════════════
+// ACCOUNTS
+// ════════════════════════════════════════════════
+const ACCTS={
+  manager:{pass:'dpu2026',role:'Manager'},
+  admin:{pass:'admin123',role:'Admin'},
+  viewer:{pass:'view2026',role:'Viewer'}
+};
+let ROLE='', CAN_EDIT=false;
+
+// ════════════════════════════════════════════════
+// HISTORICAL DATA COUNT (from images)
+// ════════════════════════════════════════════════
+const DC_WKS=['FEB 17-23','FEB 24-MAR 2','MAR 3-9','MAR 10-16','MAR 17-23','MAR 23-30','MAR 31-APR 6','APR 6-13'];
+const DC5152={
+  rows:[
+    {n:'51_np1',v:[0,0,0,0,0,0,0,446]},
+    {n:'51_np2',v:[0,0,0,0,0,0,0,416]},
+    {n:'52_np1',v:[2759,2869,3268,2104,2628,2762,2452,2295]},
+    {n:'52_np2',v:[2548,1963,3058,3129,2808,3129,1987,1866]},
+    {n:'52_np3',v:[3623,2856,2734,2860,2642,2459,2619,2035]},
+    {n:'52_np4',v:[3073,2799,2660,2436,3052,2309,1919,2007]},
+    {n:'52_np5',v:[2066,2280,2235,2592,3148,2181,2569,2106]},
+    {n:'52_np6',v:[1721,1550,1385,2062,2175,2316,2569,2416]},
+  ],
+  tots:[17439,16078,16920,16793,18488,18234,16431,13587]
+};
+const DC30_WKS=['MAR 3-9','MAR 10-16','MAR 17-23','MAR 23-30','MAR 31-APR 6','APR 6-13'];
+const DC30={
+  rows:[
+    {n:'30_150',v:[1329,584,570,305,210,807]},
+    {n:'30_180',v:[361,571,586,525,764,1395]},
+    {n:'30_210',v:[345,391,536,0,434,679]},
+    {n:'NP1',v:[5853,5172,6673,6373,6858,2965]},
+    {n:'NP2',v:[2753,3489,3720,4250,3274,3190]},
+    {n:'NP3',v:[2675,3350,3210,2543,2474,2098]},
+  ],
+  sub1:[11281,12011,13603,13166,12606,8253],
+  rows2:[
+    {n:'NP4',v:[1548,2298,2892,2868,2387,2821]},
+    {n:'NP5',v:[1149,1317,2202,2048,1429,698]},
+    {n:'NP6',v:[810,1304,1492,1636,1831,1670]},
+  ],
+  tots:[28104,30487,35484,33714,32267,24576]
+};
+const DC12={
+  rows:[
+    {n:'12_150',v:[347,161,157,141,88,127]},
+    {n:'12_180',v:[87,181,289,198,169,443]},
+    {n:'12_220',v:[278,236,304,326,246,225]},
+    {n:'NP1',v:[507,338,414,321,814,476]},
+    {n:'NP2',v:[224,572,695,506,286,476]},
+    {n:'NP3',v:[203,423,532,472,241,525]},
+  ],
+  sub1:[934,1333,1641,1289,1341,1477],
+  rows2:[
+    {n:'NP4',v:[1323,970,235,219,154,303]},
+    {n:'NP5',v:[341,811,962,1095,1328,859]},
+    {n:'NP6',v:[405,379,550,746,554,424]},
+  ],
+  tots:[4649,5404,5779,5323,5221,5335]
+};
+
+// ════════════════════════════════════════════════
+// CC DATASET — default
+// ════════════════════════════════════════════════
+const DEF={
+  weeks:['FEB 16-22','FEB 23-MAR 1','MAR 2-8','MAR 9-15','MAR 16-22','MAR 30-APR 4'],
+  dp:   [0,0,14222,10924,12451,15183],
+  ov:   [0,0,13896,16175,15708,18885],
+  ap:   [0,0,2534,2145,2250,2470],
+  cb:   [11470,30974,0,0,0,0],
+  dpC:  [0,0,494,393,409,526],
+  ovC:  [0,0,457,494,508,574],
+  apC:  [0,0,84,62,69,93],
+  cbC:  [366,919,0,0,0,0],
+  dpDC: [0,0,18232,17597,16920,18234],
+  ovDC: [0,0,28104,30487,35484,32267],
+  apDC: [0,0,4649,5404,5779,5221],
+  dpDay:[1150,3173,2965,0,2890,2785,2220],
+  ovDay:[2025,5015,3460,0,3235,2765,2385],
+  apDay:[95,540,375,0,610,455,395],
+};
+let D, sheetUrl='', charts={}, AF='all';
+const DAYS=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+
+const ff=v=>'$'+Math.round(v).toLocaleString();
+const fk=v=>v>=1e6?'$'+(v/1e6).toFixed(1)+'M':v>=1000?'$'+(v/1000).toFixed(1)+'K':'$'+v;
+const pc=(a,b)=>b>0?Math.round((a-b)/b*100):0;
+const getCol=()=>AF==='dp'?'#4F8EF7':AF==='ov'?'#2DD882':AF==='ap'?'#F5A623':'#6EA8FF';
+
+function loadD(){try{const s=localStorage.getItem('dpu_v6');D=s?JSON.parse(s):JSON.parse(JSON.stringify(DEF));sheetUrl=localStorage.getItem('dpu_v6_url')||'';}catch{D=JSON.parse(JSON.stringify(DEF));}}
+function saveD(){localStorage.setItem('dpu_v6',JSON.stringify(D));}
+
+// ════════════════════════════════════════════════
+// GETTERS
+// ════════════════════════════════════════════════
+function gAmts(){
+  if(AF==='dp')return D.dp;if(AF==='ov')return D.ov;if(AF==='ap')return D.ap;
+  return D.weeks.map((_,i)=>D.cb[i]||(D.dp[i]+D.ov[i]+D.ap[i]));
+}
+function gCnts(){
+  if(AF==='dp')return D.dpC;if(AF==='ov')return D.ovC;if(AF==='ap')return D.apC;
+  return D.weeks.map((_,i)=>D.cbC[i]||(D.dpC[i]+D.ovC[i]+D.apC[i]));
+}
+
+// ════════════════════════════════════════════════
+// LOGIN / LOGOUT
+// ════════════════════════════════════════════════
+function doLogin(){
+  const u=document.getElementById('lu').value.trim().toLowerCase();
+  const p=document.getElementById('lp').value;
+  if(ACCTS[u]&&ACCTS[u].pass===p){
+    ROLE=ACCTS[u].role; CAN_EDIT=ROLE!=='Viewer';
+    document.getElementById('login').style.display='none';
+    document.getElementById('app').classList.add('on');
+    const b=document.getElementById('t-badge');
+    b.textContent=ROLE; b.className='t-badge tb-'+ROLE.toLowerCase();
+    document.getElementById('t-user').textContent=u;
+    loadD(); applyRole(); init();
+  } else {document.getElementById('lerr').textContent='Incorrect username or password.';document.getElementById('lp').value='';}
+}
+function doLogout(){
+  document.getElementById('app').classList.remove('on');
+  document.getElementById('login').style.display='flex';
+  ['lu','lp'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('lerr').textContent='';
+}
+function applyRole(){
+  if(!CAN_EDIT){
+    document.getElementById('admin-ctrl').style.display='none';
+    document.querySelectorAll('.admin-only').forEach(el=>el.style.display='none');
+  }
+  if(!CAN_EDIT) document.getElementById('del-head').style.display='none';
+}
+
+// ════════════════════════════════════════════════
+// MODALS
+// ════════════════════════════════════════════════
+function openOv(id){document.getElementById(id).classList.add('on');}
+function closeOv(id){document.getElementById(id).classList.remove('on');}
+function conf(t,m,fn){
+  document.getElementById('conf-t').textContent=t;
+  document.getElementById('conf-m').textContent=m;
+  document.getElementById('conf-ok').onclick=()=>{fn();closeOv('ov-conf');};
+  openOv('ov-conf');
+}
+
+// ════════════════════════════════════════════════
+// SHEETS
+// ════════════════════════════════════════════════
+async function connectSheet(){
+  const url=document.getElementById('surl-inp').value.trim();
+  const st=document.getElementById('sstat');
+  if(!url){st.style.color='var(--re)';st.textContent='Please enter a URL.';return;}
+  st.style.color='var(--ac)';st.textContent='Connecting...';
+  sheetUrl=url;localStorage.setItem('dpu_v6_url',url);
+  const ok=await syncSheet();
+  if(ok){st.style.color='var(--ov)';st.textContent='Connected! Data synced.';setTimeout(()=>closeOv('ov-sheet'),1400);}
+  else{st.style.color='var(--re)';st.textContent='Failed — check that sheet is published as CSV.';}
+}
+async function syncSheet(){
+  if(!sheetUrl)return false;
+  const dot=document.getElementById('sdot');dot.classList.add('spin');
+  try{
+    const r=await fetch(sheetUrl);if(!r.ok)throw 0;
+    parseCSV(await r.text());
+    dot.classList.remove('spin');dot.classList.add('on');
+    document.getElementById('slbl').textContent='Live · '+new Date().toLocaleTimeString();
+    saveD();updateAll();return true;
+  }catch{dot.classList.remove('spin');return false;}
+}
+function parseCSV(txt){
+  const lines=txt.trim().split('\n').filter(l=>l.trim()&&!/^week/i.test(l));
+  if(!lines.length)return;
+  const nw=[],nd=[],no=[],na=[],nc=[],ndc=[],noc=[],nac=[],ncc=[],ndd=[],nod=[],nad=[];
+  lines.forEach(l=>{
+    const c=l.split(',').map(x=>x.trim().replace(/^"|"$/g,''));
+    if(!c[0])return;
+    nw.push(c[0]);nd.push(+c[1]||0);no.push(+c[2]||0);na.push(+c[3]||0);
+    ndc.push(+c[4]||0);noc.push(+c[5]||0);nac.push(+c[6]||0);
+    ndd.push(+c[7]||0);nod.push(+c[8]||0);nad.push(+c[9]||0);
+    nc.push(0);ncc.push(0);
+  });
+  if(nw.length)Object.assign(D,{weeks:nw,dp:nd,ov:no,ap:na,cb:nc,dpC:ndc,ovC:noc,apC:nac,cbC:ncc,dpDC:ndd,ovDC:nod,apDC:nad});
+}
+
+// ════════════════════════════════════════════════
+// ENTRY
+// ════════════════════════════════════════════════
+function saveEntry(){
+  const lbl=document.getElementById('ew-lbl').value.trim();
+  if(!lbl){alert('Week label required.');return;}
+  const v={da:+document.getElementById('ea-dp').value||0,oa:+document.getElementById('ea-ov').value||0,aa:+document.getElementById('ea-ap').value||0,dc:+document.getElementById('ec-dp').value||0,oc:+document.getElementById('ec-ov').value||0,ac:+document.getElementById('ec-ap').value||0,dd:+document.getElementById('ed-dp').value||0,od:+document.getElementById('ed-ov').value||0,ad:+document.getElementById('ed-ap').value||0};
+  const idx=D.weeks.indexOf(lbl);
+  if(idx>=0){
+    D.dp[idx]=v.da;D.ov[idx]=v.oa;D.ap[idx]=v.aa;D.cb[idx]=0;
+    D.dpC[idx]=v.dc;D.ovC[idx]=v.oc;D.apC[idx]=v.ac;D.cbC[idx]=0;
+    D.dpDC[idx]=v.dd;D.ovDC[idx]=v.od;D.apDC[idx]=v.ad;
+  } else {
+    D.weeks.push(lbl);D.dp.push(v.da);D.ov.push(v.oa);D.ap.push(v.aa);D.cb.push(0);
+    D.dpC.push(v.dc);D.ovC.push(v.oc);D.apC.push(v.ac);D.cbC.push(0);
+    D.dpDC.push(v.dd);D.ovDC.push(v.od);D.apDC.push(v.ad);
+    D.dpDay=[0,0,0,0,0,0,0];D.ovDay=[0,0,0,0,0,0,0];D.apDay=[0,0,0,0,0,0,0];
+  }
+  saveD();updateAll();closeOv('ov-entry');
+  document.getElementById('slbl').textContent='Saved · '+new Date().toLocaleTimeString();
+}
+
+// ════════════════════════════════════════════════
+// DC MANUAL UPDATE
+// ════════════════════════════════════════════════
+function openDCModal(){
+  const sel=document.getElementById('dc-wk');
+  sel.innerHTML=D.weeks.map((w,i)=>`<option value="${i}">${w}</option>`).join('');
+  sel.value=D.weeks.length-1;
+  openOv('ov-dc');
+}
+function saveDC(){
+  const idx=+document.getElementById('dc-wk').value;
+  const dpAdd=(+document.getElementById('dc-51np1').value||0)+(+document.getElementById('dc-52np1').value||0)+(+document.getElementById('dc-52np2').value||0)+(+document.getElementById('dc-52np3').value||0)+(+document.getElementById('dc-52np4').value||0)+(+document.getElementById('dc-52np5').value||0);
+  const ovAdd=(+document.getElementById('dc-30np1').value||0)+(+document.getElementById('dc-30np2').value||0)+(+document.getElementById('dc-30np3').value||0);
+  const apAdd=(+document.getElementById('dc-12np1').value||0)+(+document.getElementById('dc-12np2').value||0)+(+document.getElementById('dc-12np3').value||0);
+  D.dpDC[idx]=(D.dpDC[idx]||0)+dpAdd;
+  D.ovDC[idx]=(D.ovDC[idx]||0)+ovAdd;
+  D.apDC[idx]=(D.apDC[idx]||0)+apAdd;
+  saveD();updateAll();closeOv('ov-dc');
+}
+
+// ════════════════════════════════════════════════
+// DELETE / CLEAR
+// ════════════════════════════════════════════════
+const arrKeys=['weeks','dp','ov','ap','cb','dpC','ovC','apC','cbC','dpDC','ovDC','apDC'];
+function deleteLastWeek(){if(!D.weeks.length)return;arrKeys.forEach(k=>D[k].pop());saveD();updateAll();}
+function deleteByIdx(i){arrKeys.forEach(k=>D[k].splice(i,1));saveD();updateAll();}
+function clearAll(){D=JSON.parse(JSON.stringify(DEF));saveD();updateAll();}
+function doDeleteSelect(){
+  const w=prompt('Enter exact week label to delete:\n\n'+D.weeks.join('\n'));
+  if(!w)return;
+  const i=D.weeks.indexOf(w.trim());
+  if(i<0){alert('Week not found: '+w);return;}
+  conf('Delete "'+w+'"','Remove this week permanently?',()=>deleteByIdx(i));
+}
+
+// ════════════════════════════════════════════════
+// FILTER
+// ════════════════════════════════════════════════
+function setF(f,btn,cls){
+  AF=f;
+  document.querySelectorAll('.fb').forEach(b=>b.className='fb');
+  btn.classList.add(cls||'fa');
+  updateAll();
+}
+
+// ════════════════════════════════════════════════
+// TABS
+// ════════════════════════════════════════════════
+function goTab(id,el){
+  document.querySelectorAll('.pg').forEach(p=>p.classList.remove('on'));
+  document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('on'));
+  document.getElementById('pg-'+id).classList.add('on');
+  el.classList.add('on');
+  if(id==='weekly')buildWeekly();
+  else if(id==='monthly')buildMonthly();
+  else if(id==='datacount')buildDCPage();
+  else if(id==='mgmt')buildMgmt();
+}
+
+// ════════════════════════════════════════════════
+// KPIs
+// ════════════════════════════════════════════════
+function updateKPIs(){
+  const a=gAmts(),n=D.weeks.length;
+  const tot=a.reduce((s,v)=>s+v,0);
+  document.getElementById('k-tot').textContent=ff(tot);
+  document.getElementById('k-tot-m').textContent=n+' periods';
+  document.getElementById('k-dp').textContent=ff(D.dp.reduce((s,v)=>s+v,0));
+  document.getElementById('k-ov').textContent=ff(D.ov.reduce((s,v)=>s+v,0));
+  document.getElementById('k-ap').textContent=ff(D.ap.reduce((s,v)=>s+v,0));
+  const pk=Math.max(...a);
+  document.getElementById('k-pk').textContent=ff(pk);
+  document.getElementById('k-pkw').textContent=D.weeks[a.indexOf(pk)]||'—';
+  const mkd=(id,arr)=>{
+    const p=pc(arr[n-1]||0,arr[n-2]||0),el=document.getElementById(id);
+    if(n<2){el.textContent='—';el.className='delta nc';return;}
+    el.textContent=(p>=0?'+':'')+p+'% WoW';el.className='delta '+(p>=0?'up':'dn');
+  };
+  mkd('k-dpd',D.dp);mkd('k-ovd',D.ov);mkd('k-apd',D.ap);
+}
+
+// ════════════════════════════════════════════════
+// INSIGHTS
+// ════════════════════════════════════════════════
+function updateInsights(){
+  const n=D.weeks.length;if(!n){document.getElementById('insights-row').innerHTML='';return;}
+  const totals=D.weeks.map((_,i)=>D.cb[i]||(D.dp[i]+D.ov[i]+D.ap[i]));
+  const lastTot=totals[n-1]||0,prevTot=totals[n-2]||0;
+  const wowTot=pc(lastTot,prevTot);
+  // Best campaign this week
+  const dp=D.dp[n-1]||0,ov=D.ov[n-1]||0,ap=D.ap[n-1]||0;
+  const best=Math.max(dp,ov,ap);
+  const bestName=best===dp?'DP':best===ov?'OVS':'AAP';
+  const bestCol=best===dp?'var(--dp)':best===ov?'var(--ov)':'var(--ap)';
+  // WoW data count
+  const dcWow=pc(D.dpDC[n-1]||0,D.dpDC[n-2]||0);
+  const ins=[
+    {icon:'📈',bg:'var(--dpg)',title:`Week ${D.weeks[n-1]}`,body:`Total CC: <b style="color:var(--ac2)">${ff(lastTot)}</b> · WoW: <b class="${wowTot>=0?'up':'dn'}">${wowTot>=0?'+':''}${wowTot}%</b>`},
+    {icon:'🏆',bg:'var(--ovg)',title:`Top Campaign: ${bestName}`,body:`${bestName} leads this week at <b style="color:${bestCol}">${ff(best)}</b> — ${totals[n-1]>0?Math.round(best/totals[n-1]*100):0}% of total`},
+    {icon:'📊',bg:'var(--apg)',title:'DP Data Count Trend',body:`Latest: <b style="color:var(--dp)">${(D.dpDC[n-1]||0).toLocaleString()}</b> records · WoW: <b class="${dcWow>=0?'up':'dn'}">${dcWow>=0?'+':''}${dcWow}%</b>`},
+  ];
+  document.getElementById('insights-row').innerHTML=ins.map(i=>`
+    <div class="insight">
+      <div class="ins-icon" style="background:${i.bg}">${i.icon}</div>
+      <div class="ins-txt"><div class="ins-title">${i.title}</div><div class="ins-body">${i.body}</div></div>
+    </div>`).join('');
+}
+
+// ════════════════════════════════════════════════
+// DATA COUNT WoW PANEL
+// ════════════════════════════════════════════════
+function updateDCWow(){
+  const n=D.weeks.length;
+  // Use specific np codes as specified
+  const items=[
+    {name:'DP Reminders',codes:'51_np1 + 52_np1',curr:D.dpDC[n-1]||0,prev:D.dpDC[n-2]||0,col:'var(--dp)'},
+    {name:'OVS Reminders',codes:'30_np1',curr:D.ovDC[n-1]||0,prev:D.ovDC[n-2]||0,col:'var(--ov)'},
+    {name:'AAP Reminders',codes:'12_np1',curr:D.apDC[n-1]||0,prev:D.apDC[n-2]||0,col:'var(--ap)'},
+  ];
+  document.getElementById('dc-wow').innerHTML=items.map(it=>{
+    const chg=pc(it.curr,it.prev),up=chg>=0,has=it.prev>0;
+    const bw=has?Math.min(Math.round(it.curr/it.prev*100),100):100;
+    const badgeCls=up?'up':'dn';
+    const arrow=up?'↑':'↓';
+    return `<div class="dc-card">
+      <div class="dc-top">
+        <div>
+          <div class="dc-name" style="color:${it.col}">${it.name}</div>
+          <div class="dc-off">${it.codes}</div>
+        </div>
+        ${has?`<span class="dc-badge delta ${badgeCls}">${arrow} ${Math.abs(chg)}% WoW</span>`:'<span style="font-size:10px;color:var(--mu2);font-family:var(--mo)">No prior week</span>'}
+      </div>
+      <div class="dc-nums">
+        <div class="dc-val" style="color:${it.col}">${it.curr.toLocaleString()}</div>
+        ${has?`<div class="dc-prev">prev: ${it.prev.toLocaleString()}</div>`:''}
+      </div>
+      <div class="dc-bar-row">
+        <div class="dc-track"><div class="dc-fill" style="width:${bw}%;background:${it.col}"></div></div>
+        <div class="dc-pct" style="color:${it.col}">${it.curr.toLocaleString()}</div>
+      </div>
+      ${has?`<div class="dc-detail">Change: <b style="color:${up?'var(--ov)':'var(--re)'}">${up?'+':''}${(it.curr-it.prev).toLocaleString()}</b> records from previous week</div>`:''}
+    </div>`;
+  }).join('');
+}
+
+// ════════════════════════════════════════════════
+// CHARTS (overview)
+// ════════════════════════════════════════════════
+const CAX=(g,ex={})=>({...(ex||{}),ticks:{font:{size:9},color:'#3A4A60',...((ex||{}).ticks||{})},grid:g?{color:'rgba(79,142,247,.05)'}:{display:false}});
+function mk(id,type,data,opts){if(charts[id])charts[id].destroy();charts[id]=new Chart(document.getElementById(id),{type,data,options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},...opts}});}
+
+function buildCharts(){
+  const a=gAmts(),c=gCnts(),W=D.weeks,co=getCol();
+  // C1 trend
+  const ds1=AF==='all'?[
+    {label:'DP',data:D.dp,borderColor:'#4F8EF7',backgroundColor:'#4F8EF710',fill:true,tension:.4,pointRadius:3,pointHoverRadius:5},
+    {label:'OVS',data:D.ov,borderColor:'#2DD882',backgroundColor:'#2DD88210',fill:true,tension:.4,pointRadius:3,pointHoverRadius:5},
+    {label:'AAP',data:D.ap,borderColor:'#F5A623',backgroundColor:'#F5A62310',fill:true,tension:.4,pointRadius:3,pointHoverRadius:5},
+    {label:'Early',data:D.cb.map(v=>v>0?v:null),borderColor:'#3A4A60',borderDash:[4,3],tension:.4,pointRadius:3,fill:false}
+  ]:[{label:AF.toUpperCase(),data:a,borderColor:co,backgroundColor:co+'12',fill:true,tension:.4,pointRadius:4}];
+  document.getElementById('leg1').innerHTML=ds1.map(d=>`<span><span class="ld" style="background:${d.borderColor}"></span>${d.label}</span>`).join('');
+  mk('c1','line',{labels:W,datasets:ds1},{scales:{x:CAX(false,{ticks:{maxRotation:35,autoSkip:false}}),y:CAX(true,{ticks:{callback:v=>fk(v)}})},plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>' '+c.dataset.label+': '+ff(c.raw||0)}}}});
+  // C2 donut
+  const dv=[D.dp.reduce((s,v)=>s+v,0),D.ov.reduce((s,v)=>s+v,0),D.ap.reduce((s,v)=>s+v,0),D.cb.reduce((s,v)=>s+v,0)];
+  const dt=dv.reduce((s,v)=>s+v,0)||1;const dc=['#4F8EF7','#2DD882','#F5A623','#3A4A60'],dl=['DP','OVS','AAP','Early'];
+  document.getElementById('leg2').innerHTML=dl.map((l,i)=>`<span><span class="ld" style="background:${dc[i]}"></span>${l} ${Math.round(dv[i]/dt*100)}%</span>`).join('');
+  mk('c2','doughnut',{labels:dl,datasets:[{data:dv,backgroundColor:dc,borderWidth:0,hoverOffset:4}]},{cutout:'62%',plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>' '+c.label+': '+ff(c.raw)}}}});
+  // C3 count
+  mk('c3','bar',{labels:W,datasets:[{data:c,backgroundColor:co+'bb',borderRadius:4}]},{scales:{x:CAX(false,{ticks:{maxRotation:35,autoSkip:false}}),y:CAX(true)},plugins:{legend:{display:false}}});
+  // C4 daily
+  const dds=AF==='all'?[
+    {label:'DP',data:D.dpDay||[],backgroundColor:'#4F8EF7bb',borderRadius:3},
+    {label:'OVS',data:D.ovDay||[],backgroundColor:'#2DD882bb',borderRadius:3},
+    {label:'AAP',data:D.apDay||[],backgroundColor:'#F5A623bb',borderRadius:3}
+  ]:[{label:AF.toUpperCase(),data:(AF==='dp'?D.dpDay:AF==='ov'?D.ovDay:D.apDay)||[],backgroundColor:co+'bb',borderRadius:3}];
+  mk('c4','bar',{labels:DAYS,datasets:dds},{plugins:{legend:{display:AF==='all',position:'top',labels:{boxWidth:7,font:{size:9},color:'#5A6A80'}}},scales:{x:CAX(false),y:CAX(true,{ticks:{callback:v=>fk(v)}})}});
+  // C5 cumulative
+  let r=0;const cu=a.map(v=>{r+=v;return r;});
+  mk('c5','line',{labels:W,datasets:[{data:cu,borderColor:co,backgroundColor:co+'18',fill:true,tension:.3,pointRadius:4}]},{scales:{x:CAX(false,{ticks:{maxRotation:35,autoSkip:false}}),y:CAX(true,{ticks:{callback:v=>fk(v)}})},plugins:{legend:{display:false}}});
+  // C6 grouped
+  const si=D.weeks.findIndex((_,i)=>D.dp[i]+D.ov[i]+D.ap[i]>0);const s=si>=0?si:0;
+  mk('c6','bar',{labels:D.weeks.slice(s),datasets:[
+    {label:'DP',data:D.dp.slice(s),backgroundColor:'#4F8EF7bb',borderRadius:3},
+    {label:'OVS',data:D.ov.slice(s),backgroundColor:'#2DD882bb',borderRadius:3},
+    {label:'AAP',data:D.ap.slice(s),backgroundColor:'#F5A623bb',borderRadius:3}
+  ]},{plugins:{legend:{display:false}},scales:{x:CAX(false,{ticks:{maxRotation:30,autoSkip:false}}),y:CAX(true,{ticks:{callback:v=>fk(v)}})}});
+}
+
+// ════════════════════════════════════════════════
+// SUMMARY TABLE (with subtotals + grand total + type totals)
+// ════════════════════════════════════════════════
+function buildTable(){
+  const rows=[];
+  D.weeks.forEach((w,i)=>{
+    if(D.cb[i]>0) rows.push({w,t:'cb',a:D.cb[i],c:D.cbC[i],i});
+    if(D.dp[i]>0) rows.push({w,t:'dp',a:D.dp[i],c:D.dpC[i],i});
+    if(D.ov[i]>0) rows.push({w,t:'ov',a:D.ov[i],c:D.ovC[i],i});
+    if(D.ap[i]>0) rows.push({w,t:'ap',a:D.ap[i],c:D.apC[i],i});
+  });
+  const flt=AF==='all'?rows:rows.filter(r=>r.t===AF||r.t==='cb');
+  // Group by week
+  const byW={};
+  flt.forEach(r=>{if(!byW[r.w])byW[r.w]={rows:[],totA:0,totC:0};byW[r.w].rows.push(r);byW[r.w].totA+=r.a;byW[r.w].totC+=r.c;});
+  const pill=t=>`<span class="pill p-${t}">${t==='cb'?'COMB':t.toUpperCase()}</span>`;
+  const db=CAN_EDIT?(r=>`<td><button class="del-btn" onclick="conf('Delete ${r.w}','Remove ${r.w} from data?',()=>deleteByIdx(${r.i}))">✕</button></td>`):(r=>'<td></td>');
+  let html='';
+  Object.entries(byW).forEach(([wk,wd])=>{
+    wd.rows.forEach(r=>{html+=`<tr><td style="font-family:var(--mo);font-size:11px;color:var(--mu3)">${r.w}</td><td>${pill(r.t)}</td><td class="num">${ff(r.a)}</td><td class="num">${r.c.toLocaleString()}</td>${db(r)}</tr>`;});
+    if(wd.rows.length>1){html+=`<tr class="t-sub"><td style="padding-left:16px;font-family:var(--mo);font-size:10px">↳ ${wk} total</td><td></td><td class="num" style="font-weight:600">${ff(wd.totA)}</td><td class="num" style="font-weight:600">${wd.totC.toLocaleString()}</td><td></td></tr>`;}
+  });
+  const totA=flt.reduce((s,r)=>s+r.a,0),totC=flt.reduce((s,r)=>s+r.c,0);
+  const dpT=D.dp.reduce((s,v)=>s+v,0),ovT=D.ov.reduce((s,v)=>s+v,0),apT=D.ap.reduce((s,v)=>s+v,0);
+  const dpTC=D.dpC.reduce((s,v)=>s+v,0),ovTC=D.ovC.reduce((s,v)=>s+v,0),apTC=D.apC.reduce((s,v)=>s+v,0);
+  html+=`<tr class="t-grand"><td colspan="2">GRAND TOTAL</td><td class="num">${ff(totA)}</td><td class="num">${totC.toLocaleString()}</td><td></td></tr>`;
+  if(AF==='all'){
+    html+=`<tr class="t-dp"><td style="padding-left:16px">↳ DP Total</td><td></td><td class="num">${ff(dpT)}</td><td class="num">${dpTC.toLocaleString()}</td><td></td></tr>`;
+    html+=`<tr class="t-ov"><td style="padding-left:16px">↳ OVS Total</td><td></td><td class="num">${ff(ovT)}</td><td class="num">${ovTC.toLocaleString()}</td><td></td></tr>`;
+    html+=`<tr class="t-ap"><td style="padding-left:16px">↳ AAP Total</td><td></td><td class="num">${ff(apT)}</td><td class="num">${apTC.toLocaleString()}</td><td></td></tr>`;
+  }
+  document.getElementById('tbl-body').innerHTML=html;
+}
+
+// ════════════════════════════════════════════════
+// WEEKLY PERFORMANCE PAGE
+// ════════════════════════════════════════════════
+function buildWeekly(){
+  const btns=document.getElementById('wk-sel-btns');
+  btns.innerHTML=D.weeks.map((w,i)=>`<button class="wkbtn${i===D.weeks.length-1?' on':''}" onclick="showWk(${i},this)">${w}</button>`).join('');
+  showWk(D.weeks.length-1,btns.lastChild);
+}
+function showWk(i,btn){
+  document.querySelectorAll('#wk-sel-btns .wkbtn').forEach(b=>b.classList.remove('on'));
+  if(btn)btn.classList.add('on');
+  const w=D.weeks[i],dp=D.dp[i]||0,ov=D.ov[i]||0,ap=D.ap[i]||0,cb=D.cb[i]||0;
+  const totA=cb||(dp+ov+ap),dpC=D.dpC[i]||0,ovC=D.ovC[i]||0,apC=D.apC[i]||0,cbC=D.cbC[i]||0;
+  const totC=cbC||(dpC+ovC+apC);
+  const dpD=D.dpDC[i]||0,ovD=D.ovDC[i]||0,apD=D.apDC[i]||0;
+  const pA=i>0?(D.cb[i-1]||0)||(D.dp[i-1]||0)+(D.ov[i-1]||0)+(D.ap[i-1]||0):0;
+  const wow=pc(totA,pA);
+  // Insights for week
+  const best=Math.max(dp,ov,ap),bestN=best===dp?'DP':best===ov?'OVS':'AAP',bestC=best===dp?'var(--dp)':best===ov?'var(--ov)':'var(--ap)';
+  document.getElementById('wk-content').innerHTML=`
+    <div class="kgrid kgrid-4" style="margin-bottom:12px">
+      <div class="kpi kpi-total"><div class="keb">Week Total</div><div class="kval">${ff(totA)}</div><div class="kmeta"><span class="delta ${wow>=0?'up':'dn'}">${wow>=0?'+':''}${wow}% WoW</span></div></div>
+      <div class="kpi kpi-dp"><div class="keb">DP</div><div class="kval" style="color:var(--dp)">${ff(dp)}</div><div class="kmeta" style="color:var(--mu3)">Count: ${dpC.toLocaleString()}</div></div>
+      <div class="kpi kpi-ov"><div class="keb">OVS</div><div class="kval" style="color:var(--ov)">${ff(ov)}</div><div class="kmeta" style="color:var(--mu3)">Count: ${ovC.toLocaleString()}</div></div>
+      <div class="kpi kpi-ap"><div class="keb">AAP</div><div class="kval" style="color:var(--ap)">${ff(ap)}</div><div class="kmeta" style="color:var(--mu3)">Count: ${apC.toLocaleString()}</div></div>
+    </div>
+    <div class="insight-row" style="margin-bottom:12px">
+      <div class="insight"><div class="ins-icon" style="background:var(--ag)">📌</div><div class="ins-txt"><div class="ins-title">Week ${w} vs Prior</div><div class="ins-body">Total: <b>${ff(totA)}</b> · Prior: <b>${ff(pA)}</b> · <span class="delta ${wow>=0?'up':'dn'}">${wow>=0?'+':''}${wow}%</span></div></div></div>
+      <div class="insight"><div class="ins-icon" style="background:var(--ovg)">🏅</div><div class="ins-txt"><div class="ins-title">Leading Campaign</div><div class="ins-body"><b style="color:${bestC}">${bestN}</b> at ${ff(best)} — ${totA>0?Math.round(best/totA*100):0}% of week total</div></div></div>
+      <div class="insight"><div class="ins-icon" style="background:var(--apg)">🗂</div><div class="ins-txt"><div class="ins-title">Data Count</div><div class="ins-body">DP: <b style="color:var(--dp)">${dpD.toLocaleString()}</b> · OVS: <b style="color:var(--ov)">${ovD.toLocaleString()}</b> · AAP: <b style="color:var(--ap)">${apD.toLocaleString()}</b></div></div></div>
+    </div>
+    <div class="g2" style="margin-bottom:10px">
+      <div class="card"><div class="ch"><span class="clbl">${w} — CC Amount</span></div><div style="position:relative;height:190px"><canvas id="wc1"></canvas></div></div>
+      <div class="card"><div class="ch"><span class="clbl">${w} — CC Count</span></div><div style="position:relative;height:190px"><canvas id="wc2"></canvas></div></div>
+    </div>
+    <div class="card">
+      <div class="ch"><span class="clbl">Week ${w} — Full Summary</span></div>
+      <table class="tbl">
+        <thead><tr><th>Campaign</th><th class="num">CC Amount</th><th class="num">% of Total</th><th class="num">CC Count</th><th class="num">Data Count</th></tr></thead>
+        <tbody>
+          ${cb>0?`<tr><td><span class="pill p-cb">COMBINED</span></td><td class="num">${ff(cb)}</td><td class="num">100%</td><td class="num">${cbC.toLocaleString()}</td><td class="num">—</td></tr>`:''}
+          ${dp>0?`<tr><td><span class="pill p-dp">DP</span></td><td class="num">${ff(dp)}</td><td class="num">${totA>0?Math.round(dp/totA*100):0}%</td><td class="num">${dpC.toLocaleString()}</td><td class="num">${dpD.toLocaleString()}</td></tr>`:''}
+          ${ov>0?`<tr><td><span class="pill p-ov">OVS</span></td><td class="num">${ff(ov)}</td><td class="num">${totA>0?Math.round(ov/totA*100):0}%</td><td class="num">${ovC.toLocaleString()}</td><td class="num">${ovD.toLocaleString()}</td></tr>`:''}
+          ${ap>0?`<tr><td><span class="pill p-ap">AAP</span></td><td class="num">${ff(ap)}</td><td class="num">${totA>0?Math.round(ap/totA*100):0}%</td><td class="num">${apC.toLocaleString()}</td><td class="num">${apD.toLocaleString()}</td></tr>`:''}
+          <tr class="t-grand"><td colspan="1">TOTAL</td><td class="num">${ff(totA)}</td><td class="num">100%</td><td class="num">${totC.toLocaleString()}</td><td class="num">${(dpD+ovD+apD).toLocaleString()}</td></tr>
+        </tbody>
+      </table>
+    </div>`;
+  setTimeout(()=>{
+    const c1=document.getElementById('wc1'),c2=document.getElementById('wc2');
+    if(c1)new Chart(c1,{type:'bar',data:{labels:cb>0?['Combined']:['DP','OVS','AAP'],datasets:[{data:cb>0?[cb]:[dp,ov,ap],backgroundColor:cb>0?['#6EA8FFbb']:['#4F8EF7bb','#2DD882bb','#F5A623bb'],borderRadius:5}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:CAX(false),y:CAX(true,{ticks:{callback:v=>fk(v)}})}}});
+    if(c2)new Chart(c2,{type:'bar',data:{labels:['DP','OVS','AAP'],datasets:[{data:[dpC,ovC,apC],backgroundColor:['#4F8EF7bb','#2DD882bb','#F5A623bb'],borderRadius:4}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:CAX(false),y:CAX(true)}}});
+  },60);
+}
+
+// ════════════════════════════════════════════════
+// MONTHLY PERFORMANCE
+// ════════════════════════════════════════════════
+function getMonth(w){
+  const wl=w.toLowerCase();
+  if(/feb/i.test(wl))return'February 2026';if(/mar/i.test(wl))return'March 2026';
+  if(/apr/i.test(wl))return'April 2026';if(/may/i.test(wl))return'May 2026';return'Other';
+}
+function buildMonthly(){
+  const months={};
+  D.weeks.forEach((w,i)=>{
+    const m=getMonth(w);
+    if(!months[m])months[m]={weeks:[],dpa:0,ova:0,apa:0,cba:0,dpc:0,ovc:0,apc:0,dpd:0,ovd:0,apd:0};
+    const mo=months[m];
+    mo.weeks.push({w,i});mo.dpa+=D.dp[i];mo.ova+=D.ov[i];mo.apa+=D.ap[i];mo.cba+=D.cb[i];
+    mo.dpc+=D.dpC[i];mo.ovc+=D.ovC[i];mo.apc+=D.apC[i];
+    mo.dpd+=D.dpDC[i];mo.ovd+=D.ovDC[i];mo.apd+=D.apDC[i];
+  });
+  window._months=months;
+  const mkeys=Object.keys(months);
+  const btns=document.getElementById('mo-sel-btns');
+  btns.innerHTML=mkeys.map((m,i)=>`<button class="wkbtn${i===mkeys.length-1?' on':''}" onclick="showMonth('${m}',this)">${m}</button>`).join('');
+  if(mkeys.length)showMonth(mkeys[mkeys.length-1],btns.lastChild);
+}
+function showMonth(m,btn){
+  document.querySelectorAll('#mo-sel-btns .wkbtn').forEach(b=>b.classList.remove('on'));
+  if(btn)btn.classList.add('on');
+  const md=(window._months||{})[m];
+  if(!md){document.getElementById('mo-content').innerHTML='<div style="color:var(--mu3);padding:20px;font-family:var(--mo)">No data.</div>';return;}
+  const totA=md.cba||(md.dpa+md.ova+md.apa),totC=md.dpc+md.ovc+md.apc;
+  const prevM=Object.keys(window._months||{});
+  const prevIdx=prevM.indexOf(m)-1;
+  const prev=prevIdx>=0?window._months[prevM[prevIdx]]:null;
+  const prevT=prev?(prev.cba||(prev.dpa+prev.ova+prev.apa)):0;
+  const wow=pc(totA,prevT);
+  document.getElementById('mo-content').innerHTML=`
+    <div class="kgrid kgrid-4" style="margin-bottom:12px">
+      <div class="kpi kpi-total"><div class="keb">Month Total</div><div class="kval">${ff(totA)}</div><div class="kmeta"><span class="delta ${wow>=0?'up':'dn'}">${wow>=0?'+':''}${wow}% MoM</span> · ${md.weeks.length}w</div></div>
+      <div class="kpi kpi-dp"><div class="keb">DP Total</div><div class="kval" style="color:var(--dp)">${ff(md.dpa)}</div><div class="kmeta" style="color:var(--mu3)">Count: ${md.dpc.toLocaleString()}</div></div>
+      <div class="kpi kpi-ov"><div class="keb">OVS Total</div><div class="kval" style="color:var(--ov)">${ff(md.ova)}</div><div class="kmeta" style="color:var(--mu3)">Count: ${md.ovc.toLocaleString()}</div></div>
+      <div class="kpi kpi-ap"><div class="keb">AAP Total</div><div class="kval" style="color:var(--ap)">${ff(md.apa)}</div><div class="kmeta" style="color:var(--mu3)">Count: ${md.apc.toLocaleString()}</div></div>
+    </div>
+    <div class="insight-row" style="margin-bottom:12px">
+      <div class="insight"><div class="ins-icon" style="background:var(--ag)">📅</div><div class="ins-txt"><div class="ins-title">${m} Overview</div><div class="ins-body">${md.weeks.length} weeks · <b>${ff(totA)}</b> total CC · <span class="delta ${wow>=0?'up':'dn'}">${wow>=0?'+':''}${wow}% vs ${prevM[prevIdx]||'prior'}</span></div></div></div>
+      <div class="insight"><div class="ins-icon" style="background:var(--ovg)">📊</div><div class="ins-txt"><div class="ins-title">DP / OVS / AAP Split</div><div class="ins-body">DP: <b>${totA>0?Math.round(md.dpa/totA*100):0}%</b> · OVS: <b>${totA>0?Math.round(md.ova/totA*100):0}%</b> · AAP: <b>${totA>0?Math.round(md.apa/totA*100):0}%</b></div></div></div>
+      <div class="insight"><div class="ins-icon" style="background:var(--apg)">🗂</div><div class="ins-txt"><div class="ins-title">Data Count</div><div class="ins-body">DP: <b style="color:var(--dp)">${md.dpd.toLocaleString()}</b> · OVS: <b style="color:var(--ov)">${md.ovd.toLocaleString()}</b> · AAP: <b style="color:var(--ap)">${md.apd.toLocaleString()}</b></div></div></div>
+    </div>
+    <div class="g2" style="margin-bottom:10px">
+      <div class="card"><div class="ch"><span class="clbl">Weekly Breakdown</span></div><div style="position:relative;height:190px"><canvas id="mc1"></canvas></div></div>
+      <div class="card"><div class="ch"><span class="clbl">DP / OVS / AAP Split</span></div><div style="position:relative;height:155px"><canvas id="mc2"></canvas></div><div class="leg" style="justify-content:center;margin-top:8px"><span><span class="ld" style="background:var(--dp)"></span>DP ${totA>0?Math.round(md.dpa/totA*100):0}%</span><span><span class="ld" style="background:var(--ov)"></span>OVS ${totA>0?Math.round(md.ova/totA*100):0}%</span><span><span class="ld" style="background:var(--ap)"></span>AAP ${totA>0?Math.round(md.apa/totA*100):0}%</span></div></div>
+    </div>
+    <div class="card">
+      <div class="ch"><span class="clbl">${m} — Week-by-Week Detail</span></div>
+      <table class="tbl">
+        <thead><tr><th>Week</th><th class="num">DP</th><th class="num">OVS</th><th class="num">AAP</th><th class="num">Total</th><th class="num">DP Cnt</th><th class="num">OVS Cnt</th><th class="num">AAP Cnt</th><th class="num">WoW</th></tr></thead>
+        <tbody>${md.weeks.map(({w,i},wi)=>{const t=D.cb[i]||(D.dp[i]+D.ov[i]+D.ap[i]);const pt=wi>0?(D.cb[md.weeks[wi-1].i]||(D.dp[md.weeks[wi-1].i]+D.ov[md.weeks[wi-1].i]+D.ap[md.weeks[wi-1].i])):0;const wp=pc(t,pt);return`<tr><td style="font-family:var(--mo);font-size:11px;color:var(--mu3)">${w}</td><td class="num">${ff(D.dp[i])}</td><td class="num">${ff(D.ov[i])}</td><td class="num">${ff(D.ap[i])}</td><td class="num" style="color:var(--ac2);font-weight:600">${ff(t)}</td><td class="num">${D.dpC[i].toLocaleString()}</td><td class="num">${D.ovC[i].toLocaleString()}</td><td class="num">${D.apC[i].toLocaleString()}</td><td class="num"><span class="delta ${wi>0?(wp>=0?'up':'dn'):'nc'}">${wi>0?((wp>=0?'+':'')+wp+'%'):'—'}</span></td></tr>`;}).join('')}
+        <tr class="t-grand"><td>TOTAL</td><td class="num">${ff(md.dpa)}</td><td class="num">${ff(md.ova)}</td><td class="num">${ff(md.apa)}</td><td class="num">${ff(totA)}</td><td class="num">${md.dpc.toLocaleString()}</td><td class="num">${md.ovc.toLocaleString()}</td><td class="num">${md.apc.toLocaleString()}</td><td></td></tr>
+        </tbody>
+      </table>
+    </div>`;
+  setTimeout(()=>{
+    const idxs=md.weeks.map(({i})=>i);
+    const c1=document.getElementById('mc1');
+    if(c1)new Chart(c1,{type:'bar',data:{labels:md.weeks.map(({w})=>w),datasets:[
+      {label:'DP',data:idxs.map(i=>D.dp[i]),backgroundColor:'#4F8EF7bb',borderRadius:3},
+      {label:'OVS',data:idxs.map(i=>D.ov[i]),backgroundColor:'#2DD882bb',borderRadius:3},
+      {label:'AAP',data:idxs.map(i=>D.ap[i]),backgroundColor:'#F5A623bb',borderRadius:3}
+    ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:true,position:'top',labels:{boxWidth:7,font:{size:9},color:'#5A6A80'}}},scales:{x:CAX(false,{ticks:{maxRotation:30}}),y:CAX(true,{ticks:{callback:v=>fk(v)}})}}});
+    const c2=document.getElementById('mc2');
+    if(c2&&(md.dpa+md.ova+md.apa)>0)new Chart(c2,{type:'doughnut',data:{labels:['DP','OVS','AAP'],datasets:[{data:[md.dpa,md.ova,md.apa],backgroundColor:['#4F8EF7','#2DD882','#F5A623'],borderWidth:0,hoverOffset:4}]},options:{responsive:true,maintainAspectRatio:false,cutout:'62%',plugins:{legend:{display:false}}}});
+  },60);
+}
+
+// ════════════════════════════════════════════════
+// DATA COUNT PAGE
+// ════════════════════════════════════════════════
+function buildDCPage(){
+  // DC charts
+  setTimeout(()=>{
+    const c1=document.getElementById('dc-c1');
+    if(c1){if(charts['dc1'])charts['dc1'].destroy();charts['dc1']=new Chart(c1,{type:'bar',data:{labels:DC_WKS,datasets:[{data:DC5152.tots,backgroundColor:'#4F8EF7bb',borderRadius:4,label:'DP Total'}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:CAX(false,{ticks:{maxRotation:35}}),y:CAX(true,{ticks:{callback:v=>v.toLocaleString()}})}}});}
+    const c2=document.getElementById('dc-c2');
+    if(c2){if(charts['dc2'])charts['dc2'].destroy();charts['dc2']=new Chart(c2,{type:'line',data:{labels:DC30_WKS,datasets:[
+      {label:'OVS (Off 30)',data:DC30.tots,borderColor:'#2DD882',backgroundColor:'#2DD88210',fill:true,tension:.4,pointRadius:4},
+      {label:'AAP (Off 12)',data:DC12.tots,borderColor:'#F5A623',backgroundColor:'#F5A62310',fill:true,tension:.4,pointRadius:4}
+    ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:true,position:'top',labels:{boxWidth:7,font:{size:9},color:'#5A6A80'}}},scales:{x:CAX(false,{ticks:{maxRotation:35}}),y:CAX(true,{ticks:{callback:v=>v.toLocaleString()}})}}});}
+  },60);
+
+  // Tables
+  const mkT=(tbl,wks,mainRows,sub1,rows2,tots,subLabel)=>{
+    let h=`<thead><tr><th>Office</th>${wks.map(w=>`<th>${w}</th>`).join('')}</tr></thead><tbody>`;
+    mainRows.forEach(r=>{h+=`<tr><td>${r.n}</td>${r.v.map(v=>`<td class="${v===0?'em':''}">${v===0?'—':v.toLocaleString()}</td>`).join('')}</tr>`;});
+    if(sub1)h+=`<tr class="ds"><td>${subLabel||'SUBTOTAL'}</td>${sub1.map(v=>`<td>${v.toLocaleString()}</td>`).join('')}</tr>`;
+    if(rows2)rows2.forEach(r=>{h+=`<tr><td>${r.n}</td>${r.v.map(v=>`<td>${v.toLocaleString()}</td>`).join('')}</tr>`;});
+    h+=`<tr class="dg"><td>TOTAL</td>${tots.map(v=>`<td>${v.toLocaleString()}</td>`).join('')}</tr></tbody>`;
+    document.getElementById(tbl).innerHTML=h;
+  };
+  mkT('dct-5152',DC_WKS,DC5152.rows,null,null,DC5152.tots,'');
+  mkT('dct-30',DC30_WKS,DC30.rows,DC30.sub1,DC30.rows2,DC30.tots,'SUBTOTAL NP1-3');
+  mkT('dct-12',DC12_WKS||DC30_WKS,DC12.rows,DC12.sub1,DC12.rows2,DC12.tots,'SUBTOTAL NP1-3');
+}
+const DC12_WKS=DC30_WKS;
+
+// ════════════════════════════════════════════════
+// MANAGEMENT PAGE
+// ════════════════════════════════════════════════
+function buildMgmt(){
+  document.getElementById('mgmt-body').innerHTML=D.weeks.map((w,i)=>`
+    <tr>
+      <td style="color:var(--mu2);font-family:var(--mo);font-size:11px">${i+1}</td>
+      <td style="font-family:var(--mo);font-size:12px;font-weight:500">${w}</td>
+      <td class="num" style="color:#90BAF9">${D.dp[i]?ff(D.dp[i]):'<span style="color:var(--mu)">—</span>'}</td>
+      <td class="num" style="color:#7BDCA5">${D.ov[i]?ff(D.ov[i]):'<span style="color:var(--mu)">—</span>'}</td>
+      <td class="num" style="color:#F7C56A">${D.ap[i]?ff(D.ap[i]):'<span style="color:var(--mu)">—</span>'}</td>
+      <td class="num" style="color:#90BAF9">${D.dpC[i]?D.dpC[i].toLocaleString():'<span style="color:var(--mu)">—</span>'}</td>
+      <td class="num" style="color:#7BDCA5">${D.ovC[i]?D.ovC[i].toLocaleString():'<span style="color:var(--mu)">—</span>'}</td>
+      <td class="num" style="color:#F7C56A">${D.apC[i]?D.apC[i].toLocaleString():'<span style="color:var(--mu)">—</span>'}</td>
+      <td class="num" style="color:#90BAF9;border-left:1px solid var(--b1)">${D.dpDC[i]?D.dpDC[i].toLocaleString():'<span style="color:var(--mu)">—</span>'}</td>
+      <td class="num" style="color:#7BDCA5">${D.ovDC[i]?D.ovDC[i].toLocaleString():'<span style="color:var(--mu)">—</span>'}</td>
+      <td class="num" style="color:#F7C56A">${D.apDC[i]?D.apDC[i].toLocaleString():'<span style="color:var(--mu)">—</span>'}</td>
+      <td style="display:flex;gap:4px;justify-content:flex-end">
+        <button class="del-btn" style="color:var(--ac2);padding:2px 7px" onclick="openEditWeek(${i})" title="Edit week">✎</button>
+        <button class="del-btn" onclick="conf('Delete ${w}','Permanently remove week ${w}?',()=>deleteByIdx(${i}))" title="Delete week">✕</button>
+      </td>
+    </tr>`).join('');
+}
+function clearEntryForm(){
+  ['ew-lbl','ea-dp','ea-ov','ea-ap','ec-dp','ec-ov','ec-ap','ed-dp','ed-ov','ed-ap'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el) el.value=el.type==='text'?'':'0';
+  });
+}
+function openEditWeek(i){
+  const w=D.weeks[i];
+  document.getElementById('ew-lbl').value=w;
+  document.getElementById('ea-dp').value=D.dp[i]||0;
+  document.getElementById('ea-ov').value=D.ov[i]||0;
+  document.getElementById('ea-ap').value=D.ap[i]||0;
+  document.getElementById('ec-dp').value=D.dpC[i]||0;
+  document.getElementById('ec-ov').value=D.ovC[i]||0;
+  document.getElementById('ec-ap').value=D.apC[i]||0;
+  document.getElementById('ed-dp').value=D.dpDC[i]||0;
+  document.getElementById('ed-ov').value=D.ovDC[i]||0;
+  document.getElementById('ed-ap').value=D.apDC[i]||0;
+  openOv('ov-entry');
+}
+
+// ════════════════════════════════════════════════
+// MAIN UPDATE
+// ════════════════════════════════════════════════
+function updateAll(){updateKPIs();updateInsights();updateDCWow();buildCharts();buildTable();if(CAN_EDIT)buildMgmt();}
+function init(){
+  if(sheetUrl){document.getElementById('sdot').classList.add('on');document.getElementById('slbl').textContent='Syncing...';syncSheet();}
+  // Add DC update button to admin nav
+  if(CAN_EDIT){
+    const btn=document.createElement('button');
+    btn.className='act-btn';btn.textContent='Update DC';btn.style.cssText='font-size:11px;padding:6px 13px;border:1px solid var(--b2);border-radius:var(--r);cursor:pointer;background:transparent;color:var(--mu3);font-family:var(--fn);transition:.18s;display:flex;align-items:center;gap:5px;font-weight:500';
+    btn.onmouseenter=()=>{btn.style.borderColor='var(--ov)';btn.style.color='var(--ov)';btn.style.background='var(--ovg)';};
+    btn.onmouseleave=()=>{btn.style.borderColor='var(--b2)';btn.style.color='var(--mu3)';btn.style.background='transparent';};
+    btn.onclick=()=>openDCModal();
+    document.getElementById('admin-ctrl').appendChild(btn);
+  }
+  updateAll();
+}
+setInterval(()=>{if(sheetUrl)syncSheet();},5*60*1000);
+</script>
+</body>
+</html>
